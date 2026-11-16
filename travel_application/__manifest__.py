@@ -1,0 +1,22 @@
+# Manifest of the Travel Applications module.
+{
+    "name": "Travel Applications",
+    "summary": "Service applications for travel agencies: visas, tickets, hotels and more",
+    "version": "18.0.1.0.0",
+    "category": "Sales/Sales",
+    "author": "Bassel Nubiaa",
+    "website": "https://github.com/Bassel-Nubiaa/odoo-travel-services",
+    "license": "LGPL-3",
+    "depends": ["sale_management", "purchase", "account"],
+    "data": [
+        "security/travel_application_security.xml",
+        "security/ir.model.access.csv",
+        "data/ir_sequence_data.xml",
+        "data/travel_application_stage_data.xml",
+        "views/travel_application_stage_views.xml",
+        "views/travel_application_views.xml",
+        "views/travel_application_menus.xml",
+    ],
+    "installable": True,
+    "application": True,
+}

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Applications app -->
+    <menuitem id="menu_travel_root"
+              name="Applications"
+              sequence="25"
+              groups="group_travel_agent"/>
+
+    <menuitem id="menu_travel_application"
+              name="Applications"
+              parent="menu_travel_root"
+              action="travel_application_action"
+              sequence="10"/>
+
+    <menuitem id="menu_travel_configuration"
+              name="Configuration"
+              parent="menu_travel_root"
+              sequence="90"
+              groups="group_travel_admin"/>
+
+    <menuitem id="menu_travel_application_stage"
+              name="Stages"
+              parent="menu_travel_configuration"
+              action="travel_application_stage_action"
+              sequence="10"/>
+</odoo>

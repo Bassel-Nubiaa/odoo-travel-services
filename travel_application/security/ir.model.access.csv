@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_travel_application_agent,travel.application.agent,model_travel_application,group_travel_agent,1,1,1,0
+access_travel_application_admin,travel.application.admin,model_travel_application,group_travel_admin,1,1,1,1
+access_travel_application_stage_agent,travel.application.stage.agent,model_travel_application_stage,group_travel_agent,1,0,0,0
+access_travel_application_stage_admin,travel.application.stage.admin,model_travel_application_stage,group_travel_admin,1,1,1,1

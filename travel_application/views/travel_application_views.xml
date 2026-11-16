@@ -61,6 +61,27 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
+                    <notebook>
+                        <!-- Details: one line per service; each line opens its own form -->
+                        <page name="details" string="Details">
+                            <field name="line_ids">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="cost_currency_id" column_invisible="1"/>
+                                    <field name="passenger_name"/>
+                                    <field name="product_id"/>
+                                    <field name="vendor_id" optional="show"/>
+                                    <field name="price_unit"/>
+                                    <field name="cost" optional="show"/>
+                                    <field name="state"
+                                           widget="badge"
+                                           decoration-info="state == 'gathering'"
+                                           decoration-success="state == 'done'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>

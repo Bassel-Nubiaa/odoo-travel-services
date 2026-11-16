@@ -3,3 +3,5 @@ access_travel_application_agent,travel.application.agent,model_travel_applicatio
 access_travel_application_admin,travel.application.admin,model_travel_application,group_travel_admin,1,1,1,1
 access_travel_application_stage_agent,travel.application.stage.agent,model_travel_application_stage,group_travel_agent,1,0,0,0
 access_travel_application_stage_admin,travel.application.stage.admin,model_travel_application_stage,group_travel_admin,1,1,1,1
+access_travel_application_line_agent,travel.application.line.agent,model_travel_application_line,group_travel_agent,1,1,1,1
+access_travel_application_line_admin,travel.application.line.admin,model_travel_application_line,group_travel_admin,1,1,1,1

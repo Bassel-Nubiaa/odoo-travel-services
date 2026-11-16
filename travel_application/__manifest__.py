@@ -13,6 +13,8 @@
         "security/ir.model.access.csv",
         "data/ir_sequence_data.xml",
         "data/travel_application_stage_data.xml",
+        "views/product_category_views.xml",
+        "views/travel_application_line_views.xml",
         "views/travel_application_stage_views.xml",
         "views/travel_application_views.xml",
         "views/travel_application_menus.xml",

@@ -56,6 +56,10 @@ class TravelApplication(models.Model):
         group_expand="_read_group_stage_ids",
     )
 
+    line_ids = fields.One2many(
+        "travel.application.line", "application_id", string="Details", copy=True,
+    )
+
     # ------------------------------------------------------------
     # Defaults
     # ------------------------------------------------------------

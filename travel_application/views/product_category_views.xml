@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product category: which details travel services of this category need -->
+    <record id="product_category_form_view_travel" model="ir.ui.view">
+        <field name="name">product.category.form.travel</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <group name="first" position="after">
+                <group name="travel" string="Travel Applications">
+                    <field name="travel_requires_passport"/>
+                    <field name="travel_flight_details"/>
+                    <field name="travel_stay_dates"/>
+                </group>
+            </group>
+        </field>
+    </record>
+</odoo>

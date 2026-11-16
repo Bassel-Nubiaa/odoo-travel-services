@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Application line: one service, edited in its own form -->
+    <record id="travel_application_line_view_form" model="ir.ui.view">
+        <field name="name">travel.application.line.form</field>
+        <field name="model">travel.application.line</field>
+        <field name="arch" type="xml">
+            <form string="Application Line">
+                <header>
+                    <field name="state" widget="statusbar" options="{'clickable': '1'}"/>
+                </header>
+                <sheet>
+                    <!-- Helpers for the conditions below -->
+                    <field name="currency_id" invisible="1"/>
+                    <field name="cost_currency_id" invisible="1"/>
+                    <field name="requires_passport" invisible="1"/>
+                    <field name="flight_details" invisible="1"/>
+                    <field name="stay_dates" invisible="1"/>
+
+                    <group>
+                        <group string="Service">
+                            <field name="passenger_name" readonly="state == 'done'"/>
+                            <field name="product_id" readonly="state == 'done'" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Prices">
+                            <field name="price_unit" readonly="state == 'done'"/>
+                            <field name="vendor_id" readonly="state == 'done'"/>
+                            <field name="purchase_currency_id"
+                                   readonly="state == 'done'"
+                                   required="vendor_id"
+                                   options="{'no_create': True}"/>
+                            <field name="cost" readonly="state == 'done'"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Passport" invisible="not requires_passport">
+                            <field name="passport_number" readonly="state == 'done'"/>
+                            <field name="passport_photo" widget="image" readonly="state == 'done'"/>
+                        </group>
+                        <group string="Flight" invisible="not flight_details">
+                            <field name="flight_number" readonly="state == 'done'"/>
+                            <field name="seat_number" readonly="state == 'done'"/>
+                            <field name="ticket_number" readonly="state == 'done'"/>
+                            <field name="pnr" readonly="state == 'done'"/>
+                            <field name="departure_from" readonly="state == 'done'"/>
+                            <field name="arrival_to" readonly="state == 'done'"/>
+                            <field name="departure_datetime" readonly="state == 'done'"/>
+                            <field name="arrival_datetime" readonly="state == 'done'"/>
+                        </group>
+                        <group string="Stay" invisible="not stay_dates">
+                            <field name="check_in" readonly="state == 'done'"/>
+                            <field name="check_out" readonly="state == 'done'"/>
+                        </group>
+                        <group string="Date" invisible="flight_details or stay_dates">
+                            <field name="service_date" readonly="state == 'done'"/>
+                        </group>
+                    </group>
+
+                    <field name="notes" readonly="state == 'done'" placeholder="Notes for this service..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

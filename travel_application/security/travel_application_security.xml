@@ -27,4 +27,32 @@
         <field name="model_id" ref="model_travel_application"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
+
+    <!-- Agents see only the applications they are responsible for, and their lines -->
+    <record id="travel_application_rule_agent" model="ir.rule">
+        <field name="name">Applications: agents see their own</field>
+        <field name="model_id" ref="model_travel_application"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_travel_agent'))]"/>
+    </record>
+    <record id="travel_application_line_rule_agent" model="ir.rule">
+        <field name="name">Application lines: agents see their own</field>
+        <field name="model_id" ref="model_travel_application_line"/>
+        <field name="domain_force">[('application_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_travel_agent'))]"/>
+    </record>
+
+    <!-- Administrators see every application; rules of different groups add up -->
+    <record id="travel_application_rule_admin" model="ir.rule">
+        <field name="name">Applications: administrators see all</field>
+        <field name="model_id" ref="model_travel_application"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_travel_admin'))]"/>
+    </record>
+    <record id="travel_application_line_rule_admin" model="ir.rule">
+        <field name="name">Application lines: administrators see all</field>
+        <field name="model_id" ref="model_travel_application_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_travel_admin'))]"/>
+    </record>
 </odoo>

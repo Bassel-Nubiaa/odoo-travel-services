@@ -49,8 +49,12 @@ class TravelCommon(TransactionCase):
         )
 
     def _application(self, **vals):
-        """Create an application for the test client, in the first stage."""
-        return self.env["travel.application"].create({"partner_id": self.client.id, **vals})
+        """Create an application for the test client and agent, in the first stage."""
+        return self.env["travel.application"].create({
+            "partner_id": self.client.id,
+            "user_id": self.agent.id,
+            **vals,
+        })
 
     def _line(self, application, product, **vals):
         """Create a line on an application."""

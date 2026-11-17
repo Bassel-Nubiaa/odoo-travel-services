@@ -33,7 +33,10 @@ class TestApplicationLine(TravelCommon):
     def setUpClass(cls):
         """Create one application in the first stage."""
         super().setUpClass()
-        cls.application = cls.env["travel.application"].create({"partner_id": cls.client.id})
+        cls.application = cls.env["travel.application"].create({
+            "partner_id": cls.client.id,
+            "user_id": cls.agent.id,
+        })
 
     def test_prices_from_service(self):
         """The sales price and purchase price come from the service."""

@@ -1,5 +1,9 @@
 """Travel applications: one customer request, made of one or more services."""
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+
+# Header fields that change the prices or balances of the lines; locked outside editable stages.
+LOCKED_HEADER_FIELDS = {"partner_id", "currency_id"}
 
 
 class TravelApplication(models.Model):
@@ -55,7 +59,7 @@ class TravelApplication(models.Model):
         default=lambda self: self._default_stage_id(),
         group_expand="_read_group_stage_ids",
     )
-
+    lines_editable = fields.Boolean(related="stage_id.lines_editable")
     line_ids = fields.One2many(
         "travel.application.line", "application_id", string="Details", copy=True,
     )
@@ -89,3 +93,65 @@ class TravelApplication(models.Model):
                     or _("New")
                 )
         return super().create(vals_list)
+
+    def write(self, vals):
+        """Check the stage rules and the header lock before saving."""
+        if "stage_id" in vals:
+            new_stage = self.env["travel.application.stage"].browse(vals["stage_id"])
+            for application in self:
+                application._check_stage_change(new_stage)
+        if LOCKED_HEADER_FIELDS & vals.keys():
+            locked = self.filtered(lambda application: not application.stage_id.lines_editable)
+            if locked:
+                raise UserError(_(
+                    "%s: the paying client and the sales currency can only change in a stage "
+                    "where lines are editable.",
+                    locked[0].name,
+                ))
+        return super().write(vals)
+
+    # ------------------------------------------------------------
+    # Stage rules
+    # ------------------------------------------------------------
+
+    def _is_travel_admin(self):
+        """Return True for application administrators."""
+        return self.env.user.has_group("travel_application.group_travel_admin")
+
+    def _check_stage_change(self, new_stage):
+        """Agents only move forward; open lines block the stages that need them Done."""
+        self.ensure_one()
+        if new_stage == self.stage_id:
+            return
+        stages = self.env["travel.application.stage"].search([])
+        current_position = stages.ids.index(self.stage_id.id)
+        new_position = stages.ids.index(new_stage.id)
+        if new_position < current_position:
+            if not self._is_travel_admin():
+                raise UserError(_(
+                    "%s: only an administrator can move an application back.", self.name,
+                ))
+            return
+        if new_stage.is_cancel:
+            return
+        # The stages this move enters or passes, the new one included.
+        crossed = stages[current_position + 1:new_position + 1]
+        if any(crossed.mapped("lines_must_be_done")):
+            self._check_lines_done(new_stage)
+
+    def _check_lines_done(self, new_stage):
+        """Refuse the move while the application has no line or open lines."""
+        self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_(
+                "%(app)s cannot move to %(stage)s without any line.",
+                app=self.name, stage=new_stage.name,
+            ))
+        open_lines = self.line_ids.filtered(lambda line: line.state != "done")
+        if open_lines:
+            raise UserError(_(
+                "%(app)s cannot move to %(stage)s. Set these lines to Done first: %(lines)s.",
+                app=self.name,
+                stage=new_stage.name,
+                lines=", ".join(open_lines.mapped("passenger_name")),
+            ))

@@ -10,6 +10,11 @@ FLIGHT_FIELDS = (
 )
 STAY_FIELDS = ("check_in", "check_out")
 
+# Fields that set the prices and their order; locked outside stages where lines are editable.
+PRICE_FIELDS = {
+    "product_id", "price_unit", "vendor_id", "purchase_currency_id", "cost", "sequence",
+}
+
 
 class TravelApplicationLine(models.Model):
     """One service of an application, edited in its own form."""
@@ -24,6 +29,7 @@ class TravelApplicationLine(models.Model):
     )
     sequence = fields.Integer(default=10)
     company_id = fields.Many2one(related="application_id.company_id", store=True)
+    application_editable = fields.Boolean(related="application_id.stage_id.lines_editable")
     company_currency_id = fields.Many2one(related="company_id.currency_id")
     currency_id = fields.Many2one(related="application_id.currency_id", string="Sales Currency")
     state = fields.Selection(
@@ -187,24 +193,47 @@ class TravelApplicationLine(models.Model):
         return required
 
     # ------------------------------------------------------------
-    # Lock Done lines
+    # Locks: Done lines, and lines outside editable stages
     # ------------------------------------------------------------
 
     def _is_travel_admin(self):
         """Return True for application administrators."""
         return self.env.user.has_group("travel_application.group_travel_admin")
 
+    def _check_application_editable(self):
+        """Refuse when an application's stage does not allow line changes."""
+        locked = self.application_id.filtered(
+            lambda application: not application.stage_id.lines_editable
+        )
+        if locked:
+            raise UserError(_(
+                "%(app)s is in %(stage)s: lines can no longer be added, removed or repriced. "
+                "An administrator can move it back to an editable stage.",
+                app=locked[0].name,
+                stage=locked[0].stage_id.name,
+            ))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """New lines only in stages where lines are editable."""
+        lines = super().create(vals_list)
+        lines._check_application_editable()
+        return lines
+
     def write(self, vals):
-        """Done lines are read-only; administrators may only reopen them."""
+        """Done lines are read-only; prices are locked outside editable stages."""
         done_lines = self.filtered(lambda line: line.state == "done")
         if done_lines:
             reopening = set(vals) == {"state"} and vals["state"] != "done"
             if not (reopening and self._is_travel_admin()):
                 raise UserError(_("Done lines cannot be changed."))
+        if PRICE_FIELDS & vals.keys():
+            self._check_application_editable()
         return super().write(vals)
 
     @api.ondelete(at_uninstall=False)
-    def _unlink_except_done(self):
-        """Done lines cannot be deleted."""
+    def _unlink_except_locked(self):
+        """Done lines, and lines outside editable stages, cannot be deleted."""
         if self.filtered(lambda line: line.state == "done"):
             raise UserError(_("Done lines cannot be deleted."))
+        self._check_application_editable()

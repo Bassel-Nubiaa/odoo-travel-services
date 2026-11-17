@@ -4,6 +4,7 @@
     <record id="stage_new" model="travel.application.stage">
         <field name="name">New</field>
         <field name="sequence">10</field>
+        <field name="lines_editable" eval="True"/>
     </record>
     <record id="stage_data_gathering" model="travel.application.stage">
         <field name="name">Data Gathering</field>
@@ -12,6 +13,7 @@
     <record id="stage_in_progress" model="travel.application.stage">
         <field name="name">In Progress</field>
         <field name="sequence">30</field>
+        <field name="lines_must_be_done" eval="True"/>
     </record>
     <record id="stage_done" model="travel.application.stage">
         <field name="name">Done</field>
@@ -21,5 +23,6 @@
         <field name="name">Canceled</field>
         <field name="sequence">50</field>
         <field name="fold" eval="True"/>
+        <field name="is_cancel" eval="True"/>
     </record>
 </odoo>

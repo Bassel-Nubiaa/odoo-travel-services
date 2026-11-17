@@ -9,6 +9,9 @@
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="fold"/>
+                <field name="lines_editable"/>
+                <field name="lines_must_be_done"/>
+                <field name="is_cancel"/>
             </list>
         </field>
     </record>

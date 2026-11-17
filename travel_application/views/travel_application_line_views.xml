@@ -13,6 +13,7 @@
                     <!-- Helpers for the conditions below -->
                     <field name="currency_id" invisible="1"/>
                     <field name="cost_currency_id" invisible="1"/>
+                    <field name="application_editable" invisible="1"/>
                     <field name="requires_passport" invisible="1"/>
                     <field name="flight_details" invisible="1"/>
                     <field name="stay_dates" invisible="1"/>
@@ -20,16 +21,19 @@
                     <group>
                         <group string="Service">
                             <field name="passenger_name" readonly="state == 'done'"/>
-                            <field name="product_id" readonly="state == 'done'" options="{'no_create': True}"/>
+                            <field name="product_id"
+                                   readonly="state == 'done' or not application_editable"
+                                   options="{'no_create': True}"/>
                         </group>
                         <group string="Prices">
-                            <field name="price_unit" readonly="state == 'done'"/>
-                            <field name="vendor_id" readonly="state == 'done'"/>
+                            <!-- Prices: locked once the application leaves an editable stage -->
+                            <field name="price_unit" readonly="state == 'done' or not application_editable"/>
+                            <field name="vendor_id" readonly="state == 'done' or not application_editable"/>
                             <field name="purchase_currency_id"
-                                   readonly="state == 'done'"
+                                   readonly="state == 'done' or not application_editable"
                                    required="vendor_id"
                                    options="{'no_create': True}"/>
-                            <field name="cost" readonly="state == 'done'"/>
+                            <field name="cost" readonly="state == 'done' or not application_editable"/>
                         </group>
                     </group>
 

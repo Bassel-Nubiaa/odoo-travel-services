@@ -5,6 +5,8 @@ from odoo.exceptions import UserError
 # Header fields that change the prices or balances of the lines; locked outside editable stages.
 LOCKED_HEADER_FIELDS = {"partner_id", "currency_id"}
 
+# Only administrators see the overview figures.
+ADMIN_GROUP = "travel_application.group_travel_admin"
 
 class TravelApplication(models.Model):
     """A request from a paying client, followed through the application stages."""
@@ -64,6 +66,37 @@ class TravelApplication(models.Model):
         "travel.application.line", "application_id", string="Details", copy=True,
     )
 
+
+    # Overview: administrators only, in the company currency
+    company_currency_id = fields.Many2one(related="company_id.currency_id")
+    vendor_count = fields.Integer(
+        string="Number of Vendors",
+        compute="_compute_overview",
+        store=True,
+        groups=ADMIN_GROUP,
+    )
+    amount_sales = fields.Monetary(
+        string="Total Sales",
+        currency_field="company_currency_id",
+        compute="_compute_overview",
+        store=True,
+        groups=ADMIN_GROUP,
+    )
+    amount_purchases = fields.Monetary(
+        string="Total Purchases",
+        currency_field="company_currency_id",
+        compute="_compute_overview",
+        store=True,
+        groups=ADMIN_GROUP,
+    )
+    amount_profit = fields.Monetary(
+        string="Profit",
+        currency_field="company_currency_id",
+        compute="_compute_overview",
+        store=True,
+        groups=ADMIN_GROUP,
+    )
+
     # ------------------------------------------------------------
     # Defaults
     # ------------------------------------------------------------
@@ -77,6 +110,20 @@ class TravelApplication(models.Model):
     def _read_group_stage_ids(self, stages, domain):
         """Show every stage as a kanban column, even when it has no application."""
         return stages.search([])
+
+    # ------------------------------------------------------------
+    # Overview
+    # ------------------------------------------------------------
+
+    @api.depends("line_ids.vendor_id", "line_ids.price_company", "line_ids.cost_company")
+    def _compute_overview(self):
+        """Count the vendors and add up the lines in the company currency."""
+        for application in self:
+            lines = application.line_ids
+            application.vendor_count = len(lines.vendor_id)
+            application.amount_sales = sum(lines.mapped("price_company"))
+            application.amount_purchases = sum(lines.mapped("cost_company"))
+            application.amount_profit = application.amount_sales - application.amount_purchases
 
     # ------------------------------------------------------------
     # CRUD

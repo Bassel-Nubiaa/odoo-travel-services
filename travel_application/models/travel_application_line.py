@@ -82,6 +82,20 @@ class TravelApplicationLine(models.Model):
         precompute=True,
     )
 
+    # Both prices in the company currency, converted when a price or currency changes
+    price_company = fields.Monetary(
+        string="Sales Price (Company Currency)",
+        currency_field="company_currency_id",
+        compute="_compute_company_amounts",
+        store=True,
+    )
+    cost_company = fields.Monetary(
+        string="Purchase Price (Company Currency)",
+        currency_field="company_currency_id",
+        compute="_compute_company_amounts",
+        store=True,
+    )
+
     # Passport
     passport_number = fields.Char()
     passport_photo = fields.Image(max_width=1024, max_height=1024)
@@ -137,6 +151,24 @@ class TravelApplicationLine(models.Model):
             return amount
         return company.currency_id._convert(
             amount, currency, company, fields.Date.context_today(self),
+        )
+
+
+    @api.depends("price_unit", "cost", "currency_id", "purchase_currency_id")
+    def _compute_company_amounts(self):
+        """Convert both prices to the company currency at today's rate."""
+        for line in self:
+            line.price_company = line._to_company_currency(line.price_unit, line.currency_id)
+            line.cost_company = line._to_company_currency(line.cost, line.cost_currency_id)
+
+    def _to_company_currency(self, amount, currency):
+        """Convert an amount to the company currency at today's rate."""
+        self.ensure_one()
+        company = self.company_id or self.env.company
+        if not currency or currency == company.currency_id:
+            return amount
+        return currency._convert(
+            amount, company.currency_id, company, fields.Date.context_today(self),
         )
 
     # ------------------------------------------------------------

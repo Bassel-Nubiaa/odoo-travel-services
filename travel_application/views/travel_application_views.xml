@@ -33,6 +33,14 @@
                 <field name="user_id" widget="many2one_avatar_user" optional="show"/>
                 <field name="currency_id" optional="show"/>
                 <field name="stage_id"/>
+                <field name="company_currency_id" column_invisible="1"/>
+                <field name="amount_sales" sum="Total" optional="hide" groups="travel_application.group_travel_admin"/>
+                <field name="amount_purchases" sum="Total" optional="hide" groups="travel_application.group_travel_admin"/>
+                <field name="amount_profit"
+                       sum="Total"
+                       optional="hide"
+                       decoration-danger="amount_profit &lt; 0"
+                       groups="travel_application.group_travel_admin"/>
                 <field name="company_id" groups="base.group_multi_company" optional="show"/>
             </list>
         </field>
@@ -83,6 +91,24 @@
                                            decoration-success="state == 'done'"/>
                                 </list>
                             </field>
+                        </page>
+                        <!-- Overview: administrators only; amounts in the company currency -->
+                        <page name="overview" string="Overview" groups="travel_application.group_travel_admin">
+                            <field name="company_currency_id" invisible="1"/>
+                            <group>
+                                <group>
+                                    <field name="vendor_count"/>
+                                    <field name="amount_sales"/>
+                                </group>
+                                <group>
+                                    <field name="amount_purchases"/>
+                                    <field name="amount_profit"/>
+                                </group>
+                            </group>
+                            <p class="text-muted">
+                                Amounts are in the company currency, converted at the rate of the day
+                                each price was last set.
+                            </p>
                         </page>
                     </notebook>
                 </sheet>

@@ -225,6 +225,40 @@ class TravelApplicationLine(models.Model):
         return required
 
     # ------------------------------------------------------------
+    # Sales order
+    # ------------------------------------------------------------
+
+    def _prepare_sale_order_line_vals(self):
+        """Return the values of this line's sales order line."""
+        self.ensure_one()
+        return {
+            "product_id": self.product_id.id,
+            "name": self._get_sale_description(),
+            "product_uom_qty": 1.0,
+            "price_unit": self.price_unit,
+            "discount": 0.0,
+            "travel_line_id": self.id,
+        }
+
+    def _get_sale_description(self):
+        """Describe the line: the service, the passenger, then every required detail."""
+        self.ensure_one()
+        details = [self.passenger_name] + [
+            self._format_detail(name)
+            for name in self._get_required_fields()
+            if name != "passport_photo" and self[name]
+        ]
+        return "%s: %s" % (self.product_id.name, ", ".join(details))
+
+    def _format_detail(self, field_name):
+        """Return a detail as text; date-times in the user's time zone."""
+        self.ensure_one()
+        value = self[field_name]
+        if self._fields[field_name].type == "datetime":
+            return fields.Datetime.context_timestamp(self, value).strftime("%Y-%m-%d %H:%M")
+        return str(value)
+
+    # ------------------------------------------------------------
     # Locks: Done lines, and lines outside editable stages
     # ------------------------------------------------------------
 

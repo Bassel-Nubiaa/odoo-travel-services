@@ -1,12 +1,12 @@
 """Travel applications: one customer request, made of one or more services."""
-from odoo import _, api, fields, models
+from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError
 
 # Header fields that change the prices or balances of the lines; locked outside editable stages.
 LOCKED_HEADER_FIELDS = {"partner_id", "currency_id"}
-
 # Only administrators see the overview figures.
 ADMIN_GROUP = "travel_application.group_travel_admin"
+
 
 class TravelApplication(models.Model):
     """A request from a paying client, followed through the application stages."""
@@ -65,7 +65,15 @@ class TravelApplication(models.Model):
     line_ids = fields.One2many(
         "travel.application.line", "application_id", string="Details", copy=True,
     )
-
+    sale_order_id = fields.Many2one(
+        "sale.order",
+        string="Sales Order",
+        readonly=True,
+        copy=False,
+        index="btree_not_null",
+        ondelete="set null",
+    )
+    can_create_orders = fields.Boolean(compute="_compute_can_create_orders")
 
     # Overview: administrators only, in the company currency
     company_currency_id = fields.Many2one(related="company_id.currency_id")
@@ -202,3 +210,101 @@ class TravelApplication(models.Model):
                 stage=new_stage.name,
                 lines=", ".join(open_lines.mapped("passenger_name")),
             ))
+
+    # ------------------------------------------------------------
+    # Sales order
+    # ------------------------------------------------------------
+
+    @api.depends("stage_id")
+    def _compute_can_create_orders(self):
+        """Orders are created from the first stage whose lines must be Done onwards.
+
+        Cancellation stages never allow orders, wherever they sit in the sequence.
+        """
+        stages = self.env["travel.application.stage"].search([])
+        first = stages.filtered("lines_must_be_done")[:1]
+        first_position = stages.ids.index(first.id) if first else len(stages)
+        for application in self:
+            stage = application.stage_id._origin
+            application.can_create_orders = bool(
+                stage
+                and not stage.is_cancel
+                and stages.ids.index(stage.id) >= first_position
+            )
+
+    def action_create_sale_order(self):
+        """Create the application's sales order, one order line per application line."""
+        self.ensure_one()
+        if self.sale_order_id:
+            raise UserError(_("%s already has a sales order.", self.name))
+        if not self.can_create_orders:
+            raise UserError(_(
+                "%(app)s is in %(stage)s: orders are created once every line is Done "
+                "and the application has moved on.",
+                app=self.name, stage=self.stage_id.name,
+            ))
+        self._check_lines_ready_for_orders()
+        self.sale_order_id = self.env["sale.order"].create(self._prepare_sale_order_vals())
+        return self.action_view_sale_order()
+
+    def action_view_sale_order(self):
+        """Open the application's sales order."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Sales Order"),
+            "res_model": "sale.order",
+            "res_id": self.sale_order_id.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+        }
+
+    def _check_lines_ready_for_orders(self):
+        """Refuse orders while the application has no line or open lines."""
+        self.ensure_one()
+        if not self.line_ids:
+            raise UserError(_("%s has no lines to order.", self.name))
+        open_lines = self.line_ids.filtered(lambda line: line.state != "done")
+        if open_lines:
+            raise UserError(_(
+                "%(app)s: set these lines to Done before creating orders: %(lines)s.",
+                app=self.name,
+                lines=", ".join(open_lines.mapped("passenger_name")),
+            ))
+
+    def _prepare_sale_order_vals(self):
+        """Return the values of the sales order: the paying client, in the sales currency."""
+        self.ensure_one()
+        return {
+            "partner_id": self.partner_id.id,
+            "company_id": self.company_id.id,
+            "user_id": self.user_id.id,
+            "pricelist_id": self._get_sale_pricelist().id,
+            "origin": self.name,
+            "travel_application_id": self.id,
+            "order_line": [
+                Command.create(line._prepare_sale_order_line_vals()) for line in self.line_ids
+            ],
+        }
+
+    def _get_sale_pricelist(self):
+        """Return a pricelist in the sales currency, since it sets the order's currency.
+
+        The client's own pricelist comes first. In the company currency an order needs
+        no pricelist; in any other currency, a missing pricelist is reported.
+        """
+        self.ensure_one()
+        client_pricelist = self.partner_id.with_company(self.company_id).property_product_pricelist
+        if client_pricelist.currency_id == self.currency_id:
+            return client_pricelist
+        pricelist = self.env["product.pricelist"].search([
+            ("currency_id", "=", self.currency_id.id),
+            ("company_id", "in", [self.company_id.id, False]),
+        ], limit=1)
+        if not pricelist and self.currency_id != self.company_id.currency_id:
+            raise UserError(_(
+                "No pricelist in %(currency)s. Create one in Sales > Products > Pricelists "
+                "to sell %(app)s in that currency.",
+                currency=self.currency_id.name, app=self.name,
+            ))
+        return pricelist

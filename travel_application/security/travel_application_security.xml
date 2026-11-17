@@ -9,13 +9,15 @@
     <record id="group_travel_agent" model="res.groups">
         <field name="name">Agent</field>
         <field name="category_id" ref="module_category_travel_application"/>
-        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <!-- Agents sell: they create the sales orders of their own applications -->
+        <field name="implied_ids" eval="[(4, ref('base.group_user')), (4, ref('sales_team.group_sale_salesman'))]"/>
     </record>
 
     <record id="group_travel_admin" model="res.groups">
         <field name="name">Administrator</field>
         <field name="category_id" ref="module_category_travel_application"/>
-        <field name="implied_ids" eval="[(4, ref('group_travel_agent'))]"/>
+        <!-- Administrators see every application's sales orders -->
+        <field name="implied_ids" eval="[(4, ref('group_travel_agent')), (4, ref('sales_team.group_sale_salesman_all_leads'))]"/>
         <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 

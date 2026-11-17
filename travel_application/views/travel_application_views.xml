@@ -33,6 +33,7 @@
                 <field name="user_id" widget="many2one_avatar_user" optional="show"/>
                 <field name="currency_id" optional="show"/>
                 <field name="stage_id"/>
+                <field name="sale_order_id" optional="hide"/>
                 <field name="company_currency_id" column_invisible="1"/>
                 <field name="amount_sales" sum="Total" optional="hide" groups="travel_application.group_travel_admin"/>
                 <field name="amount_purchases" sum="Total" optional="hide" groups="travel_application.group_travel_admin"/>
@@ -53,10 +54,28 @@
         <field name="arch" type="xml">
             <form string="Application">
                 <header>
+                    <button name="action_create_sale_order"
+                            type="object"
+                            string="Create Sales Order"
+                            class="btn-primary"
+                            invisible="sale_order_id or not can_create_orders"/>
                     <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
                 </header>
                 <sheet>
                     <field name="lines_editable" invisible="1"/>
+                    <field name="can_create_orders" invisible="1"/>
+                    <field name="sale_order_id" invisible="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_sale_order"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-dollar"
+                                invisible="not sale_order_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Sales Order</span>
+                            </div>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1><field name="name"/></h1>
                     </div>

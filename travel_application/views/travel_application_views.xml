@@ -48,25 +48,28 @@
                     <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
                 </header>
                 <sheet>
+                    <field name="lines_editable" invisible="1"/>
                     <div class="oe_title">
                         <h1><field name="name"/></h1>
                     </div>
                     <group>
                         <group>
-                            <field name="partner_id"/>
+                            <field name="partner_id" readonly="not lines_editable"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
                         </group>
                         <group>
-                            <field name="currency_id" options="{'no_create': True}"/>
+                            <field name="currency_id" readonly="not lines_editable" options="{'no_create': True}"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
                     <notebook>
                         <!-- Details: one line per service; each line opens its own form -->
                         <page name="details" string="Details">
-                            <field name="line_ids">
+                            <!-- Lines are added, removed and reordered only in editable stages -->
+                            <field name="line_ids"
+                                   options="{'create': [('lines_editable', '=', True)], 'delete': [('lines_editable', '=', True)]}">
                                 <list>
-                                    <field name="sequence" widget="handle"/>
+                                    <field name="sequence" widget="handle" readonly="not parent.lines_editable"/>
                                     <field name="currency_id" column_invisible="1"/>
                                     <field name="cost_currency_id" column_invisible="1"/>
                                     <field name="passenger_name"/>

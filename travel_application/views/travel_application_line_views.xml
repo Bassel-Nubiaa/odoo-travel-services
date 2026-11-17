@@ -1,124 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Kanban: the main view, one column per stage -->
-    <record id="travel_application_view_kanban" model="ir.ui.view">
-        <field name="name">travel.application.kanban</field>
-        <field name="model">travel.application</field>
+    <!-- Application line: one service, edited in its own form -->
+    <record id="travel_application_line_view_form" model="ir.ui.view">
+        <field name="name">travel.application.line.form</field>
+        <field name="model">travel.application.line</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="stage_id" quick_create="false" sample="1">
-                <field name="stage_id"/>
-                <templates>
-                    <t t-name="card">
-                        <field name="name" class="fw-bold fs-5"/>
-                        <field name="partner_id"/>
-                        <field name="currency_id" class="text-muted"/>
-                        <footer class="pt-1">
-                            <field name="activity_ids" widget="kanban_activity"/>
-                            <field name="user_id" widget="many2one_avatar_user" class="ms-auto"/>
-                        </footer>
-                    </t>
-                </templates>
-            </kanban>
-        </field>
-    </record>
-
-    <!-- List -->
-    <record id="travel_application_view_list" model="ir.ui.view">
-        <field name="name">travel.application.list</field>
-        <field name="model">travel.application</field>
-        <field name="arch" type="xml">
-            <list>
-                <field name="name"/>
-                <field name="partner_id"/>
-                <field name="user_id" widget="many2one_avatar_user" optional="show"/>
-                <field name="currency_id" optional="show"/>
-                <field name="stage_id"/>
-                <field name="company_id" groups="base.group_multi_company" optional="show"/>
-            </list>
-        </field>
-    </record>
-
-    <!-- Form -->
-    <record id="travel_application_view_form" model="ir.ui.view">
-        <field name="name">travel.application.form</field>
-        <field name="model">travel.application</field>
-        <field name="arch" type="xml">
-            <form string="Application">
+            <form string="Application Line">
                 <header>
-                    <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
+                    <field name="state" widget="statusbar" options="{'clickable': '1'}"/>
                 </header>
                 <sheet>
-                    <field name="lines_editable" invisible="1"/>
-                    <div class="oe_title">
-                        <h1><field name="name"/></h1>
-                    </div>
+                    <!-- Helpers for the conditions below -->
+                    <field name="currency_id" invisible="1"/>
+                    <field name="cost_currency_id" invisible="1"/>
+                    <field name="application_editable" invisible="1"/>
+                    <field name="requires_passport" invisible="1"/>
+                    <field name="flight_details" invisible="1"/>
+                    <field name="stay_dates" invisible="1"/>
+
                     <group>
-                        <group>
-                            <field name="partner_id" readonly="not lines_editable"/>
-                            <field name="user_id" widget="many2one_avatar_user"/>
+                        <group string="Service">
+                            <field name="passenger_name" readonly="state == 'done'"/>
+                            <field name="product_id"
+                                   readonly="state == 'done' or not application_editable"
+                                   options="{'no_create': True}"/>
                         </group>
-                        <group>
-                            <field name="currency_id" readonly="not lines_editable" options="{'no_create': True}"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
+                        <group string="Prices">
+                            <!-- Prices: locked once the application leaves an editable stage -->
+                            <field name="price_unit" readonly="state == 'done' or not application_editable"/>
+                            <field name="vendor_id" readonly="state == 'done' or not application_editable"/>
+                            <field name="purchase_currency_id"
+                                   readonly="state == 'done' or not application_editable"
+                                   required="vendor_id"
+                                   options="{'no_create': True}"/>
+                            <field name="cost" readonly="state == 'done' or not application_editable"/>
                         </group>
                     </group>
-                    <notebook>
-                        <!-- Details: one line per service; each line opens its own form -->
-                        <page name="details" string="Details">
-                            <!-- Lines are added, removed and reordered only in editable stages -->
-                            <field name="line_ids"
-                                   options="{'create': [('lines_editable', '=', True)], 'delete': [('lines_editable', '=', True)]}">
-                                <list>
-                                    <field name="sequence" widget="handle" readonly="not parent.lines_editable"/>
-                                    <field name="currency_id" column_invisible="1"/>
-                                    <field name="cost_currency_id" column_invisible="1"/>
-                                    <field name="passenger_name"/>
-                                    <field name="product_id"/>
-                                    <field name="vendor_id" optional="show"/>
-                                    <field name="price_unit"/>
-                                    <field name="cost" optional="show"/>
-                                    <field name="state"
-                                           widget="badge"
-                                           decoration-info="state == 'gathering'"
-                                           decoration-success="state == 'done'"/>
-                                </list>
-                            </field>
-                        </page>
-                    </notebook>
+
+                    <group>
+                        <group string="Passport" invisible="not requires_passport">
+                            <field name="passport_number" readonly="state == 'done'"/>
+                            <field name="passport_photo" widget="image" readonly="state == 'done'"/>
+                        </group>
+                        <group string="Flight" invisible="not flight_details">
+                            <field name="flight_number" readonly="state == 'done'"/>
+                            <field name="seat_number" readonly="state == 'done'"/>
+                            <field name="ticket_number" readonly="state == 'done'"/>
+                            <field name="pnr" readonly="state == 'done'"/>
+                            <field name="departure_from" readonly="state == 'done'"/>
+                            <field name="arrival_to" readonly="state == 'done'"/>
+                            <field name="departure_datetime" readonly="state == 'done'"/>
+                            <field name="arrival_datetime" readonly="state == 'done'"/>
+                        </group>
+                        <group string="Stay" invisible="not stay_dates">
+                            <field name="check_in" readonly="state == 'done'"/>
+                            <field name="check_out" readonly="state == 'done'"/>
+                        </group>
+                        <group string="Date" invisible="flight_details or stay_dates">
+                            <field name="service_date" readonly="state == 'done'"/>
+                        </group>
+                    </group>
+
+                    <field name="notes" readonly="state == 'done'" placeholder="Notes for this service..."/>
                 </sheet>
-                <chatter/>
             </form>
-        </field>
-    </record>
-
-    <!-- Search -->
-    <record id="travel_application_view_search" model="ir.ui.view">
-        <field name="name">travel.application.search</field>
-        <field name="model">travel.application</field>
-        <field name="arch" type="xml">
-            <search>
-                <field name="name"/>
-                <field name="partner_id"/>
-                <field name="user_id"/>
-                <filter name="my_applications" string="My Applications" domain="[('user_id', '=', uid)]"/>
-                <group>
-                    <filter name="group_stage" string="Stage" context="{'group_by': 'stage_id'}"/>
-                    <filter name="group_agent" string="Responsible Agent" context="{'group_by': 'user_id'}"/>
-                    <filter name="group_client" string="Paying Client" context="{'group_by': 'partner_id'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
-
-    <!-- Action -->
-    <record id="travel_application_action" model="ir.actions.act_window">
-        <field name="name">Applications</field>
-        <field name="res_model">travel.application</field>
-        <field name="view_mode">kanban,list,form</field>
-        <field name="search_view_id" ref="travel_application_view_search"/>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Create your first application</p>
-            <p>One application per paying client: visas, tickets, hotels and every other service they need.</p>
         </field>
     </record>
 </odoo>

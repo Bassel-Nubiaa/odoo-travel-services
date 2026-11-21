@@ -59,12 +59,18 @@
                             string="Create Sales Order"
                             class="btn-primary"
                             invisible="sale_order_id or not can_create_orders"/>
+                    <button name="action_create_purchase_orders"
+                            type="object"
+                            string="Create Purchase Orders"
+                            class="btn-secondary"
+                            invisible="not has_lines_to_purchase or not can_create_orders"/>
                     <field name="stage_id" widget="statusbar" options="{'clickable': '1'}"/>
                 </header>
                 <sheet>
                     <field name="lines_editable" invisible="1"/>
                     <field name="can_create_orders" invisible="1"/>
                     <field name="sale_order_id" invisible="1"/>
+                    <field name="has_lines_to_purchase" invisible="1"/>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_sale_order"
                                 type="object"
@@ -74,6 +80,13 @@
                             <div class="o_stat_info">
                                 <span class="o_stat_text">Sales Order</span>
                             </div>
+                        </button>
+                        <button name="action_view_purchase_orders"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-credit-card"
+                                invisible="not purchase_order_count">
+                            <field name="purchase_order_count" widget="statinfo" string="Purchases"/>
                         </button>
                     </div>
                     <div class="oe_title">

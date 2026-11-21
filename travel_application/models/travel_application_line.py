@@ -1,5 +1,5 @@
 """Application lines: one service for one passenger."""
-from odoo import _, api, fields, models
+from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 # Fields each category switch makes required before a line can be Done.
@@ -30,6 +30,9 @@ class TravelApplicationLine(models.Model):
     sequence = fields.Integer(default=10)
     company_id = fields.Many2one(related="application_id.company_id", store=True)
     application_editable = fields.Boolean(related="application_id.stage_id.lines_editable")
+    purchase_line_ids = fields.One2many(
+        "purchase.order.line", "travel_line_id", string="Purchase Order Lines", readonly=True,
+    )
     company_currency_id = fields.Many2one(related="company_id.currency_id")
     currency_id = fields.Many2one(related="application_id.currency_id", string="Sales Currency")
     state = fields.Selection(
@@ -251,6 +254,25 @@ class TravelApplicationLine(models.Model):
             self.currency_id,
             self.company_id or self.env.company,
             fields.Date.context_today(self),
+        )
+
+    def _prepare_purchase_order_line_vals(self):
+        """Return the values of this line's purchase order line: its cost, without taxes."""
+        self.ensure_one()
+        return {
+            "product_id": self.product_id.id,
+            "name": self._get_sale_description(),
+            "product_qty": 1.0,
+            "price_unit": self.cost,
+            "taxes_id": [Command.set([])],
+            "travel_line_id": self.id,
+        }
+
+    def _is_purchased(self):
+        """Return True when the line is on a purchase order that is not cancelled."""
+        self.ensure_one()
+        return any(
+            purchase_line.order_id.state != "cancel" for purchase_line in self.purchase_line_ids
         )
 
     def _get_sale_description(self):

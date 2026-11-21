@@ -75,6 +75,12 @@ class TravelApplication(models.Model):
     )
     can_create_orders = fields.Boolean(compute="_compute_can_create_orders")
 
+    purchase_order_ids = fields.One2many(
+        "purchase.order", "travel_application_id", string="Purchase Orders", readonly=True,
+    )
+    purchase_order_count = fields.Integer(compute="_compute_purchase_order_count")
+    has_lines_to_purchase = fields.Boolean(compute="_compute_has_lines_to_purchase")
+
     # Overview: administrators only, in the company currency
     company_currency_id = fields.Many2one(related="company_id.currency_id")
     vendor_count = fields.Integer(
@@ -308,3 +314,86 @@ class TravelApplication(models.Model):
                 currency=self.currency_id.name, app=self.name,
             ))
         return pricelist
+
+    # ------------------------------------------------------------
+    # Purchase orders
+    # ------------------------------------------------------------
+
+    @api.depends("purchase_order_ids")
+    def _compute_purchase_order_count(self):
+        """Count the application's purchase orders."""
+        for application in self:
+            application.purchase_order_count = len(application.purchase_order_ids)
+
+    @api.depends("line_ids.vendor_id", "line_ids.purchase_line_ids.order_id.state")
+    def _compute_has_lines_to_purchase(self):
+        """Lines bought from a vendor and not yet on an active purchase order."""
+        for application in self:
+            application.has_lines_to_purchase = bool(application._get_lines_to_purchase())
+
+    def _get_lines_to_purchase(self):
+        """Return the lines with a vendor that are not on an active purchase order."""
+        self.ensure_one()
+        return self.line_ids.filtered(lambda line: line.vendor_id and not line._is_purchased())
+
+    def action_create_purchase_orders(self):
+        """Create one request for quotation per vendor and purchase currency."""
+        self.ensure_one()
+        if not self.can_create_orders:
+            raise UserError(_(
+                "%(app)s is in %(stage)s: orders are created once every line is Done "
+                "and the application has moved on.",
+                app=self.name, stage=self.stage_id.name,
+            ))
+        self._check_lines_ready_for_orders()
+        lines = self._get_lines_to_purchase()
+        if not lines:
+            raise UserError(_(
+                "%s has no line left to buy: every line with a vendor is already ordered.",
+                self.name,
+            ))
+        groups = {}
+        for line in lines:
+            key = (line.vendor_id, line.purchase_currency_id)
+            groups[key] = groups.get(key, self.env["travel.application.line"]) | line
+        orders = self.env["purchase.order"].create([
+            self._prepare_purchase_order_vals(vendor, currency, group_lines)
+            for (vendor, currency), group_lines in groups.items()
+        ])
+        return self._action_open_purchase_orders(orders)
+
+    def action_view_purchase_orders(self):
+        """Open the application's purchase orders."""
+        self.ensure_one()
+        return self._action_open_purchase_orders(self.purchase_order_ids)
+
+    def _action_open_purchase_orders(self, orders):
+        """Open one purchase order in its form, or several in a list."""
+        action = {
+            "type": "ir.actions.act_window",
+            "name": _("Purchase Orders"),
+            "res_model": "purchase.order",
+        }
+        if len(orders) == 1:
+            return {**action, "res_id": orders.id, "view_mode": "form", "views": [(False, "form")]}
+        return {
+            **action,
+            "view_mode": "list,form",
+            "views": [(False, "list"), (False, "form")],
+            "domain": [("id", "in", orders.ids)],
+        }
+
+    def _prepare_purchase_order_vals(self, vendor, currency, lines):
+        """Return the values of one request for quotation for a vendor, in a currency."""
+        self.ensure_one()
+        return {
+            "partner_id": vendor.id,
+            "currency_id": currency.id,
+            "company_id": self.company_id.id,
+            "user_id": self.user_id.id,
+            "origin": self.name,
+            "travel_application_id": self.id,
+            "order_line": [
+                Command.create(line._prepare_purchase_order_line_vals()) for line in lines
+            ],
+        }

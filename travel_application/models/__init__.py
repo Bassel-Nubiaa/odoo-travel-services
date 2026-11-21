@@ -8,3 +8,5 @@ from . import sale_order_line
 from . import travel_application
 from . import travel_application_line
 from . import travel_application_stage
+from . import purchase_order
+from . import purchase_order_line

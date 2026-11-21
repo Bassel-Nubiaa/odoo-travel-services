@@ -238,7 +238,20 @@ class TravelApplicationLine(models.Model):
             "price_unit": self.price_unit,
             "discount": 0.0,
             "travel_line_id": self.id,
+            "travel_cost": self._get_cost_in_sales_currency(),
         }
+
+    def _get_cost_in_sales_currency(self):
+        """Return the purchase price converted to the sales currency at today's rate."""
+        self.ensure_one()
+        if self.cost_currency_id == self.currency_id:
+            return self.cost
+        return self.cost_currency_id._convert(
+            self.cost,
+            self.currency_id,
+            self.company_id or self.env.company,
+            fields.Date.context_today(self),
+        )
 
     def _get_sale_description(self):
         """Describe the line: the service, the passenger, then every required detail."""

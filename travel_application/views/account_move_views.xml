@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Customer invoices: the cost that margin taxes are computed on -->
+    <record id="account_move_view_form_travel_cost" model="ir.ui.view">
+        <field name="name">account.move.form.travel.cost</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='price_unit']" position="after">
+                <field name="travel_cost"
+                       optional="show"
+                       readonly="1"
+                       column_invisible="parent.move_type not in ('out_invoice', 'out_refund')"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

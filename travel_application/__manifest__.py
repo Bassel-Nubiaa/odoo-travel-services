@@ -2,7 +2,7 @@
 {
     "name": "Travel Applications",
     "summary": "Service applications for travel agencies: visas, tickets, hotels and more",
-    "version": "18.0.1.3.0",
+    "version": "18.0.1.4.0",
     "category": "Sales/Sales",
     "author": "Bassel Nubiaa",
     "website": "https://github.com/Bassel-Nubiaa/odoo-travel-services",
@@ -19,6 +19,8 @@
         "views/travel_application_views.xml",
         "views/travel_application_menus.xml",
         "views/sale_order_views.xml",
+        "views/account_move_views.xml",
+        "views/account_tax_views.xml",
     ],
     "installable": True,
     "application": True,

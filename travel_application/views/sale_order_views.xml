@@ -13,4 +13,16 @@
             </group>
         </field>
     </record>
+
+    <!-- Sales order lines: the cost that margin taxes are computed on -->
+    <record id="sale_order_view_form_travel_cost" model="ir.ui.view">
+        <field name="name">sale.order.form.travel.cost</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="after">
+                <field name="travel_cost" optional="show" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>

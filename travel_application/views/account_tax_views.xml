@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Taxes: the switch that computes a sales tax on the margin -->
+    <record id="account_tax_view_form_travel" model="ir.ui.view">
+        <field name="name">account.tax.form.travel</field>
+        <field name="model">account.tax</field>
+        <field name="inherit_id" ref="account.view_tax_form"/>
+        <field name="arch" type="xml">
+            <field name="amount_type" position="after">
+                <field name="travel_margin_tax" invisible="type_tax_use != 'sale'"/>
+            </field>
+        </field>
+    </record>
+</odoo>

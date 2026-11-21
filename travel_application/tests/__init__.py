@@ -5,3 +5,4 @@ from . import test_travel_application
 from . import test_overview
 from . import test_sale_order
 from . import test_access
+from . import test_margin_vat
